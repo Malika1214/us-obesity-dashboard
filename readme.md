@@ -1,7 +1,7 @@
 US County Obesity Smart Dashboard
 Webmap URL
 
-https://yourusername.github.io/us-obesity-dashboard/
+https://Malika1214.github.io/us-obesity-dashboard/
 
 Project Overview
 
@@ -39,4 +39,4 @@ Thematic map: Choropleth map chosen for normalized percentage data.
 
 Additional visualization components: Bar chart and dynamic national average.
 
-Repository accessibility: Dashboard is hosted at https://yourusername.github.io/us-obesity-dashboard/.
+Repository accessibility: Dashboard is hosted at https://Malika1214.github.io/us-obesity-dashboard/.
