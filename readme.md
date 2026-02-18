@@ -1,42 +1,53 @@
-US County Obesity Smart Dashboard
-Webmap URL
+# US County Obesity Smart Dashboard
 
-https://Malika1214.github.io/us-obesity-dashboard/
+## Webmap URL
+[https://Malika1214.github.io/us-obesity-dashboard/](https://Malika1214.github.io/us-obesity-dashboard/)
 
-Project Overview
+## Project Overview
+This dashboard visualizes **adult obesity rates across US counties**. It includes:  
 
-This smart dashboard visualizes adult obesity rates across US counties. The dashboard provides an interactive choropleth map, highlights the top 10 counties with the highest obesity rates, and displays the national average dynamically.
+- An **interactive choropleth map** showing obesity percentages by county.  
+- A **bar chart of the top 10 counties** with the highest obesity rates.  
+- A **dynamic national average indicator** for quick reference.  
 
-The project demonstrates the creation of a thematic smart dashboard using Mapbox GL JS for the map component and C3.js for charts. The dashboard is fully interactive, providing both spatial and statistical insights into county-level obesity trends.
+The dashboard is built using **Mapbox GL JS** for the map and **C3.js** for charts, allowing users to explore both spatial patterns and statistical trends in county-level obesity data.
 
-Data Sources
+## Data Sources
+- **CDC PLACES Obesity Dataset** – Adult obesity rates by county.  
+- **US Census TIGER/Line County Boundaries** – County geometries for mapping.  
 
-CDC PLACES Obesity Dataset – Adult obesity rates by county
+Additional datasets were also reviewed to ensure data accuracy and completeness.
 
-US Census TIGER/Line County Boundaries – County geometries for mapping
+## Map Type Justification
+A **choropleth map** was chosen because obesity rates are normalized percentages associated with counties. Choropleth maps are ideal for comparing data across defined geographic units, making it easy to identify patterns and regional differences.
 
-Additional datasets were explored for potential cross-analysis, ensuring data completeness and accuracy.
+## Visualization Components
+1. **Choropleth Map of Obesity Rates** – Uses a color gradient to visualize obesity percentages by county.  
+2. **Top 10 Counties Bar Chart** – Highlights counties with the highest obesity rates.  
+3. **National Average Indicator** – Dynamically displays the current US adult obesity average.  
+4. *(Optional future extension)* – Could include bottom 10 counties, trend charts, or interactive popups with more county-level info.
 
-Map Type Justification
+## Lab Requirements Addressed
+- **Geospatial datasets:** US Census TIGER/Line shapefiles and CDC PLACES obesity data.  
+- **Thematic map:** Choropleth map chosen for normalized percentage data.  
+- **Additional visualization components:** Bar chart and dynamic national average.  
+- **Repository accessibility:** Dashboard is hosted at [https://Malika1214.github.io/us-obesity-dashboard/](https://Malika1214.github.io/us-obesity-dashboard/).
 
-A choropleth map was chosen because obesity rates are normalized percentages tied to administrative boundaries (counties). Choropleth maps are ideal for comparing rates across defined spatial units, allowing users to quickly identify spatial patterns and clusters.
+## Repository Structure
 
-Visualization Components
+us-obesity-dashboard
+│ index.html
+│ README.md
+├─css
+│ style.css
+├─img
+│ [any relevant images, e.g., screenshots]
+└─js
+main.js
 
-Choropleth Map of Obesity Rate – Colors represent the obesity percentage in each county, allowing regional comparisons.
 
-Bar Chart of Top 10 Counties – Shows the 10 counties with the highest obesity rates to highlight outliers.
-
-National Average Indicator – A dynamic numeric display showing the current national average for adult obesity.
-
-(Optional for future extension) – Could include bottom 10 counties, trend charts, or interactive popups with additional county-level data.
-
-Lab Requirements Addressed
-
-Geospatial datasets: US Census TIGER/Line shapefiles and CDC PLACES obesity data.
-
-Thematic map: Choropleth map chosen for normalized percentage data.
-
-Additional visualization components: Bar chart and dynamic national average.
-
-Repository accessibility: Dashboard is hosted at https://Malika1214.github.io/us-obesity-dashboard/.
+## Implementation Notes
+- **Map Styling:** Mapbox’s `light-v11` style is used for clarity and visual contrast.  
+- **Data Binding:** Obesity data is joined to county geometries via FIPS codes.  
+- **Charts:** C3.js generates the top 10 counties bar chart dynamically.  
+- **Interactivity:** Future versions could include hover popups or trend charts for deeper analysis.
