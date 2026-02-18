@@ -33,19 +33,6 @@ A **choropleth map** was chosen because obesity rates are normalized percentages
 - **Additional visualization components:** Bar chart and dynamic national average.  
 - **Repository accessibility:** Dashboard is hosted at [https://Malika1214.github.io/us-obesity-dashboard/](https://Malika1214.github.io/us-obesity-dashboard/).
 
-## Repository Structure
-
-us-obesity-dashboard
-│ index.html
-│ README.md
-├─css
-│ style.css
-├─img
-│ [any relevant images, e.g., screenshots]
-└─js
-main.js
-
-
 ## Implementation Notes
 - **Map Styling:** Mapbox’s `light-v11` style is used for clarity and visual contrast.  
 - **Data Binding:** Obesity data is joined to county geometries via FIPS codes.  
