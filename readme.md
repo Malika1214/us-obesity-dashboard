@@ -40,25 +40,3 @@ Thematic map: Choropleth map chosen for normalized percentage data.
 Additional visualization components: Bar chart and dynamic national average.
 
 Repository accessibility: Dashboard is hosted at https://yourusername.github.io/us-obesity-dashboard/.
-
-Repository structure:
-
-us-obesity-dashboard
-│   index.html
-│   readme.md
-├─css
-│      style.css
-├─img
-│      [any relevant images, e.g., screenshots]
-└─js
-       main.js
-
-Implementation Notes
-
-Map Styling: The map uses Mapbox’s light-v11 style for clarity and visual contrast.
-
-Dynamic Data Binding: Obesity data is joined to county geometries via FIPS codes.
-
-Charts: C3.js generates the top 10 counties bar chart dynamically from filtered data.
-
-Interactivity: Hovering or clicking on a county could display additional information in future versions.
