@@ -22,3 +22,17 @@ body {
 h2 {
     margin-top: 0;
 }
+
+#legend div {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+#legend span {
+    display: inline-block;
+    width: 20px;
+    height: 15px;
+    margin-right: 8px;
+}
+
