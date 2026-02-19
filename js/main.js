@@ -10,112 +10,202 @@ const map = new mapboxgl.Map({
 
 let popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false });
 
+// Wait for both map load and data fetch simultaneously — fixes the race condition
+const mapLoaded = new Promise(resolve => map.on("load", resolve));
+
 Promise.all([
-  d3.json("data/counties-simplified.json"),
-  d3.csv("data/U.S._Chronic_Disease_Indicators.csv"),
-]).then(([geoData, obesityData]) => {
-  // Filter relevant obesity data
-  const obesityFiltered = obesityData.filter(
+  d3.json("data/counties.geojson"),
+  d3.csv("data/PLACES_county.csv"),
+  mapLoaded,
+]).then(([geoData, placesData]) => {
+
+  // ── 1. FILTER ───────────────────────────────────────────────────────────────
+  const obesityFiltered = placesData.filter(
     d =>
-      d.Topic === "Nutrition, Physical Activity, and Weight Status" &&
-      d.Question === "Obesity among adults" &&
-      !isNaN(+d.DataValue)
+      d.MeasureId === "OBESITY" &&
+      d.Data_Value !== "" &&
+      !isNaN(+d.Data_Value)
   );
 
-  // Map obesity by county
+  console.log("Obesity rows:", obesityFiltered.length); // should be ~3,143
+  console.log("Sample LocationID:", obesityFiltered.slice(0, 3).map(d => d.LocationID));
+
+  // ── 2. BUILD LOOKUP (LocationID is already a 5-digit FIPS string) ───────────
   const obesityByCounty = {};
   obesityFiltered.forEach(d => {
-    obesityByCounty[d.LocationID.padStart(5, "0")] = +d.DataValue;
+    obesityByCounty[d.LocationID] = +d.Data_Value;
   });
 
-  // Add obesity to geoData
+  console.log("Sample obesityByCounty keys:", Object.keys(obesityByCounty).slice(0, 5));
+
+  // ── 3. JOIN TO GEOJSON ──────────────────────────────────────────────────────
   geoData.features.forEach(f => {
-    f.properties.obesity = obesityByCounty[f.properties.GEOID] || null;
+    f.properties.obesity = obesityByCounty[f.properties.GEOID] ?? null;
   });
 
-  // Filter out null geometries just in case
+  // Filter out null geometries
   geoData.features = geoData.features.filter(f => f.geometry !== null);
 
-  map.on("load", () => {
-    map.addSource("counties", { type: "geojson", data: geoData });
+  // ── 4. MAP LAYERS ───────────────────────────────────────────────────────────
+  map.addSource("counties", { type: "geojson", data: geoData });
 
-    map.addLayer({
-      id: "obesity-layer",
-      type: "fill",
-      source: "counties",
-      paint: {
-        "fill-color": [
-          "case",
-          ["==", ["get", "obesity"], null],
-          "#cccccc",
-          ["step", ["get", "obesity"], "#edf8fb", 20, "#b2e2e2", 25, "#66c2a4", 30, "#2ca25f", 35, "#006d2c"]
-        ],
-        "fill-opacity": 0.8
-      }
-    });
-
-    map.addLayer({
-      id: "county-borders",
-      type: "line",
-      source: "counties",
-      paint: { "line-color": "#ffffff", "line-width": 0.3 }
-    });
-
-    // Hover popup
-    map.on("mousemove", "obesity-layer", e => {
-      const props = e.features[0].properties;
-      const value = props.obesity !== null ? props.obesity.toFixed(2) : "N/A";
-      popup.setLngLat(e.lngLat).setHTML(`<strong>${props.NAME} County</strong><br>Obesity Rate: ${value}%`).addTo(map);
-    });
-
-    map.on("mouseleave", "obesity-layer", () => popup.remove());
-
-    // Click interaction
-    map.on("click", "obesity-layer", e => {
-      const props = e.features[0].properties;
-      const value = props.obesity !== null ? props.obesity.toFixed(2) : "N/A";
-      d3.select("#selectedCounty").html(`<h3>${props.NAME} County</h3><p>Obesity Rate: <strong>${value}%</strong></p>`);
-    });
+  map.addLayer({
+    id: "obesity-layer",
+    type: "fill",
+    source: "counties",
+    paint: {
+      "fill-color": [
+        "case",
+        ["==", ["get", "obesity"], null],
+        "#cccccc",
+        [
+          "step", ["get", "obesity"],
+          "#edf8fb",
+          20, "#b2e2e2",
+          25, "#66c2a4",
+          30, "#2ca25f",
+          35, "#006d2c"
+        ]
+      ],
+      "fill-opacity": 0.8
+    }
   });
 
-  // National average
-  const avg = d3.mean(obesityFiltered, d => +d.DataValue);
-  d3.select("#nationalAvg").html(`<h3>National Average: ${avg.toFixed(2)}%</h3>`);
+  map.addLayer({
+    id: "county-borders",
+    type: "line",
+    source: "counties",
+    paint: { "line-color": "#ffffff", "line-width": 0.3 }
+  });
 
-  // Top county
-  const topCounty = obesityFiltered.sort((a, b) => +b.DataValue - +a.DataValue)[0];
-  d3.select("#topCounty").html(`<h3>Highest Obesity County: ${topCounty.LocationDesc} (${+topCounty.DataValue}%)</h3>`);
+  // ── 5. HOVER POPUP ──────────────────────────────────────────────────────────
+  map.on("mousemove", "obesity-layer", e => {
+    map.getCanvas().style.cursor = "pointer";
+    const props = e.features[0].properties;
+    const raw = props.obesity;
+    const value = (raw !== null && raw !== undefined && !isNaN(+raw))
+      ? (+raw).toFixed(1)
+      : "N/A";
+    popup
+      .setLngLat(e.lngLat)
+      .setHTML(`<strong>${props.NAME} County</strong><br>Obesity Rate: ${value}%`)
+      .addTo(map);
+  });
 
-  // Top 10 bar chart
-  const top10 = obesityFiltered.sort((a, b) => +b.DataValue - +a.DataValue).slice(0, 10);
+  map.on("mouseleave", "obesity-layer", () => {
+    map.getCanvas().style.cursor = "";
+    popup.remove();
+  });
+
+  // ── 6. CLICK PANEL ──────────────────────────────────────────────────────────
+  map.on("click", "obesity-layer", e => {
+    const props = e.features[0].properties;
+    const raw = props.obesity;
+    const value = (raw !== null && raw !== undefined && !isNaN(+raw))
+      ? (+raw).toFixed(1)
+      : "N/A";
+    d3.select("#selectedCounty").html(
+      `<h3>${props.NAME} County</h3>
+       <p>Obesity Rate: <strong>${value}%</strong></p>`
+    );
+  });
+
+  // ── 7. STATS PANEL ──────────────────────────────────────────────────────────
+  const avg = d3.mean(obesityFiltered, d => +d.Data_Value);
+  d3.select("#nationalAvg").html(
+    `<h3>National Average: ${avg.toFixed(1)}%</h3>`
+  );
+
+  // Sorted copy — never mutate the original array
+  const sortedDesc = obesityFiltered
+    .slice()
+    .sort((a, b) => +b.Data_Value - +a.Data_Value);
+
+  const topCounty = sortedDesc[0];
+  d3.select("#topCounty").html(
+    `<h3>Highest: ${topCounty.LocationName}, ${topCounty.StateAbbr} (${(+topCounty.Data_Value).toFixed(1)}%)</h3>`
+  );
+
+  // ── 8. TOP 10 COUNTIES BAR CHART ────────────────────────────────────────────
+  const top10 = sortedDesc.slice(0, 10);
+
   c3.generate({
     bindto: "#barChart",
-    data: { columns: [["Obesity Rate"].concat(top10.map(d => +d.DataValue))], type: "bar" },
-    axis: { x: { type: "category", categories: top10.map(d => d.LocationDesc), tick: { rotate: 45, multiline: false } }, y: { label: { text: "Obesity Rate (%)", position: "outer-middle" } } },
-    bar: { width: { ratio: 0.7 } }
+    data: {
+      columns: [
+        ["Obesity Rate"].concat(top10.map(d => +d.Data_Value))
+      ],
+      type: "bar"
+    },
+    axis: {
+      x: {
+        type: "category",
+        categories: top10.map(d => `${d.LocationName}, ${d.StateAbbr}`),
+        tick: { rotate: 45, multiline: false }
+      },
+      y: {
+        label: { text: "Obesity Rate (%)", position: "outer-middle" },
+        min: 0,
+        padding: { bottom: 0 }
+      }
+    },
+    bar: { width: { ratio: 0.7 } },
+    legend: { show: false }
   });
 
-  // Line chart for trend over years
-  const trendData = d3.rollups(
-    obesityData.filter(d => d.Topic === "Nutrition, Physical Activity, and Weight Status" && d.Question === "Obesity among adults"),
-    v => d3.mean(v, d => +d.DataValue),
-    d => d.YearStart
-  ).sort((a, b) => a[0] - b[0]);
+  // ── 9. TOP 15 STATES AVG BAR CHART ─────────────────────────────────────────
+  // PLACES is a single-year snapshot so no year trend is available.
+  // Instead show average county obesity rate by state (top 15).
+  const stateAvgs = d3.rollups(
+    obesityFiltered,
+    v => d3.mean(v, d => +d.Data_Value),
+    d => d.StateAbbr
+  )
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 15);
 
   c3.generate({
     bindto: "#lineChart",
-    data: { x: "Year", columns: [["Year"].concat(trendData.map(d => d[0])), ["US Avg Obesity"].concat(trendData.map(d => +d[1]))], type: "line" },
-    axis: { x: { label: "Year", tick: { format: d => d } }, y: { label: "US Avg Obesity (%)", position: "outer-middle" } }
+    data: {
+      columns: [
+        ["Avg County Obesity"].concat(stateAvgs.map(d => +d[1].toFixed(1)))
+      ],
+      type: "bar"
+    },
+    axis: {
+      x: {
+        type: "category",
+        categories: stateAvgs.map(d => d[0]),
+        tick: { rotate: 45, multiline: false }
+      },
+      y: {
+        label: { text: "Avg Obesity (%)", position: "outer-middle" },
+        min: 0,
+        padding: { bottom: 0 }
+      }
+    },
+    bar: { width: { ratio: 0.7 } },
+    legend: { show: false },
+    title: { text: "Top 15 States by Avg County Obesity" }
   });
 
-  // Legend
-  const legendHTML = `
+  // ── 10. LEGEND ──────────────────────────────────────────────────────────────
+  d3.select("#legend").html(`
     <h3>Legend</h3>
-    <div><span style="background:#edf8fb"></span> < 20%</div>
-    <div><span style="background:#b2e2e2"></span> 20–25%</div>
-    <div><span style="background:#66c2a4"></span> 25–30%</div>
-    <div><span style="background:#2ca25f"></span> 30–35%</div>
-    <div><span style="background:#006d2c"></span> > 35%</div>
-  `;
-  d3.select("#legend").html(legendHTML);
+    <div><span style="background:#cccccc;display:inline-block;width:16px;height:16px;margin-right:6px;vertical-align:middle;"></span>No data</div>
+    <div><span style="background:#edf8fb;display:inline-block;width:16px;height:16px;margin-right:6px;vertical-align:middle;"></span>&lt; 20%</div>
+    <div><span style="background:#b2e2e2;display:inline-block;width:16px;height:16px;margin-right:6px;vertical-align:middle;"></span>20–25%</div>
+    <div><span style="background:#66c2a4;display:inline-block;width:16px;height:16px;margin-right:6px;vertical-align:middle;"></span>25–30%</div>
+    <div><span style="background:#2ca25f;display:inline-block;width:16px;height:16px;margin-right:6px;vertical-align:middle;"></span>30–35%</div>
+    <div><span style="background:#006d2c;display:inline-block;width:16px;height:16px;margin-right:6px;vertical-align:middle;"></span>&gt; 35%</div>
+  `);
+
+}).catch(err => {
+  console.error("Failed to load data:", err);
+  document.body.insertAdjacentHTML(
+    "afterbegin",
+    `<div style="color:red;padding:10px;font-weight:bold;">
+      Error loading data: ${err.message} — check the console for details.
+    </div>`
+  );
 });
