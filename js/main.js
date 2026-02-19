@@ -9,8 +9,6 @@ const map = new mapboxgl.Map({
 });
 
 let popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false });
-
-// Wait for both map load and data fetch simultaneously — fixes the race condition
 const mapLoaded = new Promise(resolve => map.on("load", resolve));
 
 Promise.all([
@@ -18,8 +16,6 @@ Promise.all([
   d3.csv("data/PLACES_county.csv"),
   mapLoaded,
 ]).then(([geoData, placesData]) => {
-
-  // ── 1. FILTER ───────────────────────────────────────────────────────────────
   const obesityFiltered = placesData.filter(
     d =>
       d.MeasureId === "OBESITY" &&
@@ -27,10 +23,9 @@ Promise.all([
       !isNaN(+d.Data_Value)
   );
 
-  console.log("Obesity rows:", obesityFiltered.length); // should be ~3,143
+  console.log("Obesity rows:", obesityFiltered.length);
   console.log("Sample LocationID:", obesityFiltered.slice(0, 3).map(d => d.LocationID));
 
-  // ── 2. BUILD LOOKUP (LocationID is already a 5-digit FIPS string) ───────────
   const obesityByCounty = {};
   obesityFiltered.forEach(d => {
     obesityByCounty[d.LocationID] = +d.Data_Value;
@@ -38,15 +33,12 @@ Promise.all([
 
   console.log("Sample obesityByCounty keys:", Object.keys(obesityByCounty).slice(0, 5));
 
-  // ── 3. JOIN TO GEOJSON ──────────────────────────────────────────────────────
   geoData.features.forEach(f => {
     f.properties.obesity = obesityByCounty[f.properties.GEOID] ?? null;
   });
 
-  // Filter out null geometries
   geoData.features = geoData.features.filter(f => f.geometry !== null);
 
-  // ── 4. MAP LAYERS ───────────────────────────────────────────────────────────
   map.addSource("counties", { type: "geojson", data: geoData });
 
   map.addLayer({
@@ -78,7 +70,6 @@ Promise.all([
     paint: { "line-color": "#ffffff", "line-width": 0.3 }
   });
 
-  // ── 5. HOVER POPUP ──────────────────────────────────────────────────────────
   map.on("mousemove", "obesity-layer", e => {
     map.getCanvas().style.cursor = "pointer";
     const props = e.features[0].properties;
@@ -97,7 +88,6 @@ Promise.all([
     popup.remove();
   });
 
-  // ── 6. CLICK PANEL ──────────────────────────────────────────────────────────
   map.on("click", "obesity-layer", e => {
     const props = e.features[0].properties;
     const raw = props.obesity;
@@ -110,13 +100,11 @@ Promise.all([
     );
   });
 
-  // ── 7. STATS PANEL ──────────────────────────────────────────────────────────
   const avg = d3.mean(obesityFiltered, d => +d.Data_Value);
   d3.select("#nationalAvg").html(
     `<h3>National Average: ${avg.toFixed(1)}%</h3>`
   );
 
-  // Sorted copy — never mutate the original array
   const sortedDesc = obesityFiltered
     .slice()
     .sort((a, b) => +b.Data_Value - +a.Data_Value);
@@ -126,7 +114,6 @@ Promise.all([
     `<h3>Highest: ${topCounty.LocationName}, ${topCounty.StateAbbr} (${(+topCounty.Data_Value).toFixed(1)}%)</h3>`
   );
 
-  // ── 8. TOP 10 COUNTIES BAR CHART ────────────────────────────────────────────
   const top10 = sortedDesc.slice(0, 10);
 
   c3.generate({
@@ -153,9 +140,6 @@ Promise.all([
     legend: { show: false }
   });
 
-  // ── 9. TOP 15 STATES AVG BAR CHART ─────────────────────────────────────────
-  // PLACES is a single-year snapshot so no year trend is available.
-  // Instead show average county obesity rate by state (top 15).
   const stateAvgs = d3.rollups(
     obesityFiltered,
     v => d3.mean(v, d => +d.Data_Value),
@@ -189,7 +173,6 @@ Promise.all([
     title: { text: "Top 15 States by Avg County Obesity" }
   });
 
-  // ── 10. LEGEND ──────────────────────────────────────────────────────────────
   d3.select("#legend").html(`
     <h3>Legend</h3>
     <div><span style="background:#cccccc;display:inline-block;width:16px;height:16px;margin-right:6px;vertical-align:middle;"></span>No data</div>

@@ -3,42 +3,29 @@
   <head>
     <meta charset="utf-8" />
     <title>US Obesity Smart Dashboard</title>
-
-    <!-- Mapbox -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link
       href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
       rel="stylesheet"
     />
-
-    <!-- C3 styles -->
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.css"
       rel="stylesheet"
     />
-
-    <!-- D3 v5 first — required by C3 -->
     <script src="https://d3js.org/d3.v5.min.js"></script>
-    <!-- C3 binds to D3 v5 here -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.js"></script>
-
-    <!-- D3 v7 loaded after — overwrites window.d3 for your own code -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <div id="dashboard">
       <div id="map"></div>
-
       <div id="panel">
         <h2>US County Obesity Rates</h2>
         <div id="nationalAvg"></div>
         <div id="topCounty"></div>
-        <!-- Dynamic number for highest county -->
         <div id="barChart"></div>
         <div id="lineChart"></div>
-        <!-- Trend chart -->
         <div id="legend"></div>
         <div id="selectedCounty"></div>
       </div>
