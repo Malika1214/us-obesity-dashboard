@@ -1,3 +1,5 @@
+ AI Disclosure : I used AI to translate and understand the assignment into my native langauge only , I did not use AI to write or complete any components where AI use is prohibited.
+
 # US County Obesity Smart Dashboard
 
 **Live Site:**  
@@ -18,5 +20,6 @@ It uses a choropleth map to visualize obesity percentages — darker colors mean
 - Mapbox GL JS
 - D3.js
 - C3.js
+
 
 This project helped me practice data joining, GeoJSON handling, and building a full interactive web dashboard from scratch.
